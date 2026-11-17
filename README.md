@@ -14,6 +14,7 @@ src/layout.json   הפריסה הנוכחית (נוצרת ע"י gen.py)
 output/           board.pdf (להדפסה), board.svg (לעריכה), preview.png
 reference/        תמונת הלוח המקורי בן 100 המשבצות
 build.sh          הרצת הכול
+prompts.md        פרומפטים לרקעים ריאליסטיים (5 עולמות)
 ```
 
 ## הרצה
