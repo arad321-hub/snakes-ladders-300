@@ -32,8 +32,11 @@ A(f'<rect x="{MX-6}" y="{MY-6}" width="{COLS*CELL+12}" height="{ROWS*CELL+12}" r
 
 THEME = sys.argv[1] if len(sys.argv) > 1 else 'worlds'
 # cells
-if THEME == 'worlds':
-    from worlds import background
+if THEME in ('worlds', 'photo'):
+    if THEME == 'photo':
+        from photo import background
+    else:
+        from worlds import background
     bdefs, bsvg = background(MX, MY, CELL, COLS, ROWS)
     A(f'<defs>{bdefs}</defs>'); A(bsvg)
     # checkerboard as a light translucent veil over the art + thin grid lines
@@ -41,7 +44,10 @@ if THEME == 'worlds':
         r, c = rc(n)
         x = MX + c * CELL; y = MY + (ROWS - 1 - r) * CELL
         space = r // 3 == 4
-        op = (0.10 if space else 0.30) if (r + c) % 2 == 0 else (0.0 if space else 0.08)
+        if THEME == 'photo':
+            op = (0.07 if space else 0.16) if (r + c) % 2 == 0 else 0.0
+        else:
+            op = (0.10 if space else 0.30) if (r + c) % 2 == 0 else (0.0 if space else 0.08)
         if op:
             A(f'<rect x="{x:.2f}" y="{y:.2f}" width="{CELL}" height="{CELL}" fill="#ffffff" fill-opacity="{op}"/>')
     for i in range(1, COLS):
@@ -160,8 +166,14 @@ A(f'<g transform="translate({cx:.2f},{cy:.2f})">'
 for n in range(1, N + 1):
     r, c = rc(n)
     x = MX + c * CELL; y = MY + (ROWS - 1 - r) * CELL
-    A(f'<text x="{x+1.6:.2f}" y="{y+7.4:.2f}" font-family="DejaVu Sans" font-weight="bold" font-size="7" '
-      f'fill="#13212c" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round" paint-order="stroke">{n}</text>')
+    if THEME == 'photo':
+        # number badge: readable on any background (snow, sand or space)
+        bw = 2.4 + 4.35 * len(str(n))
+        A(f'<rect x="{x+0.9:.2f}" y="{y+0.9:.2f}" width="{bw:.2f}" height="8.2" rx="2.2" fill="#ffffff" fill-opacity="0.82" stroke="#13212c" stroke-opacity="0.35" stroke-width="0.3"/>')
+        A(f'<text x="{x+0.9+bw/2:.2f}" y="{y+7.35:.2f}" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="6.6" fill="#13212c">{n}</text>')
+    else:
+        A(f'<text x="{x+1.6:.2f}" y="{y+7.4:.2f}" font-family="DejaVu Sans" font-weight="bold" font-size="7" '
+          f'fill="#13212c" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round" paint-order="stroke">{n}</text>')
 
 A('</svg>')
 open('board.svg', 'w').write('\n'.join(out))
