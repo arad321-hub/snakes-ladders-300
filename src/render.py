@@ -45,7 +45,7 @@ if THEME in ('worlds', 'photo'):
         x = MX + c * CELL; y = MY + (ROWS - 1 - r) * CELL
         space = r // 3 == 4
         if THEME == 'photo':
-            op = (0.07 if space else 0.16) if (r + c) % 2 == 0 else 0.0
+            op = (0.07 if space else (0.10 if r < 6 else 0.16)) if (r + c) % 2 == 0 else 0.0
         else:
             op = (0.10 if space else 0.30) if (r + c) % 2 == 0 else (0.0 if space else 0.08)
         if op:

@@ -13,12 +13,13 @@ WORLDS = ['meadow', 'desert', 'jungle', 'arctic', 'space']
 
 # Where to cut the strip from each image: fraction of the image height for the
 # TOP of the strip. Tune these if a different part of an image looks better.
-CROP_TOP = {'meadow': 0.50, 'desert': 0.30, 'jungle': 0.20, 'arctic': 0.24, 'space': 0.24}
+CROP_TOP = {'meadow': 0.41, 'desert': 0.38, 'jungle': 0.20, 'arctic': 0.24, 'space': 0.24}
 
-# Extra muting on top of what the images already have (1.0 = unchanged).
-SATURATION = 0.90
-CONTRAST = 0.90
-BRIGHTNESS = 1.03
+# Per-world colour tuning on top of the images (1.0 = unchanged).
+# (saturation, contrast, brightness). Meadow and desert came out paler than the
+# others, so they get a small boost; the darker/busier worlds get muted.
+TUNE = {'meadow': (1.25, 1.12, 0.98), 'desert': (1.08, 1.08, 1.0),
+        'jungle': (0.90, 0.90, 1.03), 'arctic': (0.90, 0.92, 1.0), 'space': (0.90, 0.90, 1.03)}
 
 def _strip(world, aspect):
     im = Image.open(os.path.join(BG_DIR, f'{world}.png')).convert('RGB')
@@ -30,9 +31,10 @@ def _strip(world, aspect):
     else:
         top = min(max(0, round(CROP_TOP.get(world, 0.25) * h)), h - ch)
         im = im.crop((0, top, w, top + ch))
-    im = ImageEnhance.Color(im).enhance(SATURATION)
-    im = ImageEnhance.Contrast(im).enhance(CONTRAST)
-    im = ImageEnhance.Brightness(im).enhance(BRIGHTNESS)
+    sat, con, bri = TUNE.get(world, (1, 1, 1))
+    im = ImageEnhance.Color(im).enhance(sat)
+    im = ImageEnhance.Contrast(im).enhance(con)
+    im = ImageEnhance.Brightness(im).enhance(bri)
     buf = io.BytesIO(); im.save(buf, 'JPEG', quality=92)
     return 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode(), im.size
 
