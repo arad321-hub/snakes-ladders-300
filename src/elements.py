@@ -464,3 +464,76 @@ DEFS2 = '''
 <filter id="glowblur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2"/></filter>
 <radialGradient id="goldBall" cx="35%" cy="35%" r="65%"><stop offset="0" stop-color="#fffbe0"/><stop offset="0.5" stop-color="#e8b934"/><stop offset="1" stop-color="#7a5205"/></radialGradient>
 '''
+
+# ------------------------------------------------------------------ artwork from images (assets/icons)
+import os as _os, io as _io, base64 as _b64
+_ICON_DIR = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..', 'assets', 'icons')
+_cache = {}
+
+def icon_uri(name, px=720):
+    """Return (data-uri, aspect w/h) for assets/icons/<name>.png cropped to its visible area, or None."""
+    if name in _cache: return _cache[name]
+    p = _os.path.join(_ICON_DIR, f'{name}.png')
+    if not _os.path.exists(p):
+        _cache[name] = None; return None
+    from PIL import Image
+    im = Image.open(p).convert('RGBA')
+    bbox = im.getchannel('A').point(lambda v: 255 if v > 8 else 0).getbbox()
+    im = im.crop(bbox)
+    s = px / max(im.size); im = im.resize((max(1, round(im.size[0] * s)), max(1, round(im.size[1] * s))), Image.LANCZOS)
+    buf = _io.BytesIO(); im.save(buf, 'PNG', optimize=True)
+    uri = 'data:image/png;base64,' + _b64.b64encode(buf.getvalue()).decode()
+    W, H = im.size
+    _symbols[name] = f'<symbol id="ic_{name}" viewBox="0 0 {W} {H}"><image width="{W}" height="{H}" href="{uri}"/></symbol>'
+    _cache[name] = (name, W / H)
+    return _cache[name]
+
+_symbols = {}
+def icon_defs():
+    """Each artwork is embedded once; squares reference it with <use>."""
+    return '\n'.join(f'<defs>{v}</defs>' for v in _symbols.values())
+
+def _img(name, x, y, w, h):
+    return f'<use href="#ic_{name}" x="{x:.2f}" y="{y:.2f}" width="{w:.2f}" height="{h:.2f}"/>'
+
+LABELS = {'turbo': 'TURBO', 'block': 'BLOCK', 'drain': 'ENERGY DRAIN', 'hitch': 'ENERGY DRAIN', 'swap': 'SWAP'}
+
+def action_icon_img(kind, x0, y0, cell):
+    art = icon_uri('drain' if kind == 'hitch' else kind)
+    if art is None:
+        return action_icon(kind, x0, y0, cell)
+    uri, asp = art
+    c1, c2, _ = ACTION_STYLE.get(kind, ACTION_STYLE['drain'])
+    D = 21.0
+    cx, cy = x0 + cell * 0.57, y0 + cell * 0.6
+    s = [f'<circle cx="{cx+1.0:.2f}" cy="{cy+1.5:.2f}" r="{D/2-0.3:.2f}" fill="#000" opacity="0.38" filter="url(#sh)"/>']
+    s.append(_img(uri, cx - D / 2, cy - D / 2, D, D / asp))
+    label = LABELS[kind]
+    fs = 2.0 if len(label) > 6 else 2.35
+    bw = 1.6 + len(label) * fs * 0.66
+    by = cy + D / 2 - 2.6
+    s.append(f'<rect x="{cx-bw/2:.2f}" y="{by:.2f}" width="{bw:.2f}" height="{fs+1.4:.2f}" rx="{(fs+1.4)/2:.2f}" '
+             f'fill="{c2}" stroke="#e8b934" stroke-width="0.45"/>')
+    s.append(f'<text x="{cx:.2f}" y="{by+fs+0.35:.2f}" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" '
+             f'font-size="{fs}" fill="#fff" letter-spacing="0.08">{label}</text>')
+    return ''.join(s)
+
+def start_sign_img(x0, y0, cell):
+    art = icon_uri('start')
+    if art is None: return start_sign(x0, y0, cell)
+    uri, asp = art
+    h = 23.5; w = h * asp
+    if w > 26: w = 26; h = w / asp
+    x = x0 + cell - w - 0.6; y = y0 + cell - h - 0.4
+    return (f'<ellipse cx="{x+w*0.48:.2f}" cy="{y+h-0.6:.2f}" rx="{w*0.32:.2f}" ry="1.1" fill="#000" opacity="0.35" filter="url(#sh)"/>'
+            + _img(uri, x, y, w, h))
+
+def trophy_img(x0, y0, cell):
+    art = icon_uri('trophy')
+    if art is None: return trophy(x0, y0, cell)
+    uri, asp = art
+    h = 23.0; w = h * asp
+    x = x0 + cell - w - 0.5; y = y0 + cell - h - 0.5
+    return (f'<ellipse cx="{x+w/2:.2f}" cy="{y0+cell*0.5:.2f}" rx="{w*0.75:.2f}" ry="{h*0.6:.2f}" fill="url(#glow)"/>'
+            f'<ellipse cx="{x+w/2+0.8:.2f}" cy="{y+h-0.5:.2f}" rx="{w*0.36:.2f}" ry="1.1" fill="#000" opacity="0.35" filter="url(#sh)"/>'
+            + _img(uri, x, y, w, h))

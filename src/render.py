@@ -166,9 +166,9 @@ if STYLE == 'real':
             A(el.golden_ladder(center(e['lo']), center(e['hi']), BX, BY, CELL, to_finish=(e['hi'] == N)))
     for sq, kind in lay.get('actions', {}).items():
         ra, ca = rc(int(sq))
-        A(el.action_icon(kind, MX + ca * CELL, MY + (ROWS - 1 - ra) * CELL, CELL))
-    A(el.start_sign(sx0, sy0, CELL))
-    A(el.trophy(tx0, ty0, CELL))
+        A(el.action_icon_img(kind, MX + ca * CELL, MY + (ROWS - 1 - ra) * CELL, CELL))
+    A(el.start_sign_img(sx0, sy0, CELL))
+    A(el.trophy_img(tx0, ty0, CELL))
 else:
     for e in ladders: A(ladder(e['lo'], e['hi']))
     for i, e in order:
@@ -194,6 +194,8 @@ for n in range(1, N + 1):
         A(f'<text x="{x+1.6:.2f}" y="{y+7.4:.2f}" font-family="DejaVu Sans" font-weight="bold" font-size="7" '
           f'fill="#13212c" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round" paint-order="stroke">{n}</text>')
 
+if STYLE == 'real':
+    A(el.icon_defs())
 A('</svg>')
 open('board.svg', 'w').write('\n'.join(out))
 print('ok', len(snakes), 'snakes', len(ladders), 'ladders')

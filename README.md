@@ -20,6 +20,7 @@ src/gen2.py       מחולל פריסה v2: סולם זהב, נחש אחד בא�
 src/sim.py        סימולציית משחק מרובה שחקנים עם משבצות פעולה
 output/           board.pdf (להדפסה), board.svg (לעריכה), preview.png
 reference/        תמונת הלוח המקורי בן 100 המשבצות
+assets/icons/     איורים: turbo, block, drain (Energy Drain), swap, start, trophy (PNG שקוף)
 build.sh          הרצת הכול
 prompts.md        פרומפטים לרקעים ריאליסטיים (5 עולמות)
 ```
