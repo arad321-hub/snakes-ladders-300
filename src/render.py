@@ -146,21 +146,32 @@ def snake(e, idx):
 
 ladders = [e for e in elems if e['kind'] == 'L']
 snakes = [e for e in elems if e['kind'] == 'S']
-for e in ladders: A(ladder(e['lo'], e['hi']))
-# draw longer snakes first so short ones sit on top
-for i, e in sorted(enumerate(snakes), key=lambda t: -(t[1]['hi'] - t[1]['lo'])):
-    A(snake(e, i))
-
-# start / finish decorations
-r, c = rc(1); x0 = MX + c * CELL; y0 = MY + (ROWS - 1 - r) * CELL
-A(f'<text x="{x0+CELL/2:.2f}" y="{y0+CELL*0.78:.2f}" font-family="DejaVu Sans" font-weight="bold" font-size="5" fill="#24561a" text-anchor="middle">START</text>')
-r, c = rc(N); x0 = MX + c * CELL; y0 = MY + (ROWS - 1 - r) * CELL
-cx, cy = x0 + CELL * 0.62, y0 + CELL * 0.56
-A(f'<g transform="translate({cx:.2f},{cy:.2f})">'
-  '<path d="M-6,-8 h12 v3 a6,7 0 0 1 -12,0z" fill="url(#cup)" stroke="#8a5a00" stroke-width="0.6"/>'
-  '<path d="M-6,-6 q-4,0 -3.5,3 q0.5,2.5 4,3 M6,-6 q4,0 3.5,3 q-0.5,2.5 -4,3" fill="none" stroke="#8a5a00" stroke-width="0.9"/>'
-  '<rect x="-1.2" y="4" width="2.4" height="3" fill="#d99a14" stroke="#8a5a00" stroke-width="0.5"/>'
-  '<rect x="-4.5" y="7" width="9" height="2.6" rx="0.6" fill="#7a4d12"/></g>')
+STYLE = sys.argv[2] if len(sys.argv) > 2 else 'real'
+order = sorted(enumerate(snakes), key=lambda t: -(t[1]['hi'] - t[1]['lo']))  # long snakes first
+r1, c1 = rc(1); sx0 = MX + c1 * CELL; sy0 = MY + (ROWS - 1 - r1) * CELL
+rN, cN = rc(N); tx0 = MX + cN * CELL; ty0 = MY + (ROWS - 1 - rN) * CELL
+if STYLE == 'real':
+    import elements as el
+    BX = lambda p: MX + p[0]   # elements work in mm relative to the board origin
+    BY = lambda p: MY + p[1]
+    A(f'<defs>{el.DEFS}</defs>')
+    for k, e in enumerate(ladders):
+        A(el.ladder(center(e['lo']), center(e['hi']), BX, BY, CELL, k))
+    for i, e in order:
+        A(el.snake(e, i, BX, BY, CELL, i))
+    A(el.start_sign(sx0, sy0, CELL))
+    A(el.trophy(tx0, ty0, CELL))
+else:
+    for e in ladders: A(ladder(e['lo'], e['hi']))
+    for i, e in order:
+        A(snake(e, i))
+    A(f'<text x="{sx0+CELL/2:.2f}" y="{sy0+CELL*0.78:.2f}" font-family="DejaVu Sans" font-weight="bold" font-size="5" fill="#24561a" text-anchor="middle">START</text>')
+    cx, cy = tx0 + CELL * 0.62, ty0 + CELL * 0.56
+    A(f'<g transform="translate({cx:.2f},{cy:.2f})">'
+      '<path d="M-6,-8 h12 v3 a6,7 0 0 1 -12,0z" fill="url(#cup)" stroke="#8a5a00" stroke-width="0.6"/>'
+      '<path d="M-6,-6 q-4,0 -3.5,3 q0.5,2.5 4,3 M6,-6 q4,0 3.5,3 q-0.5,2.5 -4,3" fill="none" stroke="#8a5a00" stroke-width="0.9"/>'
+      '<rect x="-1.2" y="4" width="2.4" height="3" fill="#d99a14" stroke="#8a5a00" stroke-width="0.5"/>'
+      '<rect x="-4.5" y="7" width="9" height="2.6" rx="0.6" fill="#7a4d12"/></g>')
 
 # numbers on top of everything, with white halo
 for n in range(1, N + 1):
