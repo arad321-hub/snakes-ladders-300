@@ -381,8 +381,9 @@ def golden_ladder(B, T, X, Y, CELL, uid=0, to_finish=False):
     for k in (-1, 1):
         a, b = B2 + nr * half * k + np.array([1.8, 2.4]), T2 + nr * half * k + np.array([1.8, 2.4])
         s.append(line(a, b, '#000', 3.6, 0.35, 'filter="url(#sh)"'))
-    nrung = max(3, int(Lm / 8.0))
-    rungs = [B + d * ((i + 0.5) / nrung) for i in range(nrung)]
+    span = T2 - B if to_finish else d            # finish ladder: rungs only where the rails are
+    nrung = max(3, int(np.linalg.norm(span) / 8.0))
+    rungs = [B + span * ((i + 0.5) / nrung) for i in range(nrung)]
     # rungs: red velvet wrapped in gold
     for p in rungs:
         a, b = p + nr * (half + 0.9), p - nr * (half + 0.9)
@@ -537,7 +538,7 @@ def trophy_img(x0, y0, cell):
     if art is None: return trophy(x0, y0, cell)
     uri, asp = art
     h = 23.0; w = h * asp
-    x = x0 + cell - w - 0.5; y = y0 + cell - h - 0.5
+    x = x0 + (cell - w) / 2; y = y0 + (cell - h) / 2
     return (f'<ellipse cx="{x+w/2:.2f}" cy="{y0+cell*0.5:.2f}" rx="{w*0.75:.2f}" ry="{h*0.6:.2f}" fill="url(#glow)"/>'
             f'<ellipse cx="{x+w/2+0.8:.2f}" cy="{y+h-0.5:.2f}" rx="{w*0.36:.2f}" ry="1.1" fill="#000" opacity="0.35" filter="url(#sh)"/>'
             + _img(uri, x, y, w, h))
