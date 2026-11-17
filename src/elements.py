@@ -518,15 +518,20 @@ def action_icon_img(kind, x0, y0, cell):
              f'font-size="{fs}" fill="#fff" letter-spacing="0.08">{label}</text>')
     return ''.join(s)
 
-def start_sign_img(x0, y0, cell):
+def start_sign_img(x0, y0, cell, h=19.0, fade_from=0.70):
+    """START signpost near the left edge of square 1; its soil base dissolves into the meadow."""
     art = icon_uri('start')
     if art is None: return start_sign(x0, y0, cell)
-    uri, asp = art
-    h = 23.5; w = h * asp
-    if w > 26: w = 26; h = w / asp
-    x = x0 + cell - w - 0.6; y = y0 + cell - h - 0.4
-    return (f'<ellipse cx="{x+w*0.48:.2f}" cy="{y+h-0.6:.2f}" rx="{w*0.32:.2f}" ry="1.1" fill="#000" opacity="0.35" filter="url(#sh)"/>'
-            + _img(uri, x, y, w, h))
+    name, asp = art
+    w = h * asp
+    x = x0 + 0.9; y = y0 + cell - h - 0.3
+    mid = 'startfade'
+    return (f'<linearGradient id="{mid}g" gradientUnits="userSpaceOnUse" x1="0" y1="{y:.2f}" x2="0" y2="{y+h:.2f}">'
+            f'<stop offset="0" stop-color="#fff"/><stop offset="{fade_from}" stop-color="#fff"/>'
+            f'<stop offset="0.86" stop-color="#fff" stop-opacity="0.45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
+            f'<mask id="{mid}" maskUnits="userSpaceOnUse" x="{x-1:.2f}" y="{y-1:.2f}" width="{w+2:.2f}" height="{h+2:.2f}">'
+            f'<rect x="{x-1:.2f}" y="{y-1:.2f}" width="{w+2:.2f}" height="{h+2:.2f}" fill="url(#{mid}g)"/></mask>'
+            f'<g mask="url(#{mid})">' + _img(name, x, y, w, h) + '</g>')
 
 def trophy_img(x0, y0, cell):
     art = icon_uri('trophy')
