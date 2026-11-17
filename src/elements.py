@@ -362,3 +362,102 @@ DEFS = '''
 <linearGradient id="woodH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9a361"/><stop offset="0.5" stop-color="#b27a3e"/><stop offset="1" stop-color="#8a5a2a"/></linearGradient>
 <linearGradient id="woodV" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7a4f24"/><stop offset="0.4" stop-color="#c58c4c"/><stop offset="1" stop-color="#6a4320"/></linearGradient>
 '''
+
+# ------------------------------------------------------------------ golden (championship) ladder
+def golden_ladder(B, T, X, Y, CELL, uid=0):
+    B = np.array(B) * CELL; T = np.array(T) * CELL
+    d = T - B; Lm = np.linalg.norm(d); u = d / Lm; nr = np.array([-u[1], u[0]])
+    half = 0.24 * CELL
+    B2, T2 = B - u * 5.5, T + u * 4.0
+    across = nr * (0.5 * np.sign(nr @ LIGHT))
+    def line(a, b, col, w, op=1, extra=''):
+        return (f'<line x1="{X(a):.2f}" y1="{Y(a):.2f}" x2="{X(b):.2f}" y2="{Y(b):.2f}" stroke="{col}" '
+                f'stroke-width="{w}" stroke-linecap="round" opacity="{op}" {extra}/>')
+    s = []
+    # royal glow
+    for k in (-1, 0, 1):
+        a, b = B2 + nr * half * k, T2 + nr * half * k
+        s.append(line(a, b, '#ffe9a0', 9 if k == 0 else 6, 0.35, 'filter="url(#glowblur)"'))
+    for k in (-1, 1):
+        a, b = B2 + nr * half * k + np.array([1.8, 2.4]), T2 + nr * half * k + np.array([1.8, 2.4])
+        s.append(line(a, b, '#000', 3.6, 0.35, 'filter="url(#sh)"'))
+    nrung = max(3, int(Lm / 8.0))
+    rungs = [B + d * ((i + 0.5) / nrung) for i in range(nrung)]
+    # rungs: red velvet wrapped in gold
+    for p in rungs:
+        a, b = p + nr * (half + 0.9), p - nr * (half + 0.9)
+        s.append(line(a, b, '#6b4704', 2.8))
+        s.append(line(a, b, '#d9a521', 2.2))
+        s.append(line(a + u * 0.35, b + u * 0.35, '#fff3b0', 0.6, 0.9))
+        c = p
+        s.append(f'<circle cx="{X(c):.2f}" cy="{Y(c):.2f}" r="1.25" fill="#b0122a" stroke="#6b4704" stroke-width="0.35"/>'
+                 f'<circle cx="{X(c)-0.35:.2f}" cy="{Y(c)-0.35:.2f}" r="0.4" fill="#ffb3c0"/>')
+    # rails
+    for k in (-1, 1):
+        a, b = B2 + nr * half * k, T2 + nr * half * k
+        s.append(line(a, b, '#5a3a02', 3.8))
+        s.append(line(a, b, '#c9961c', 3.1))
+        s.append(line(a - across * 1.3, b - across * 1.3, '#7a5205', 0.9, 0.6))
+        s.append(line(a + across * 0.9, b + across * 0.9, '#fff1a8', 1.0, 0.95))
+        s.append(line(a + across * 1.2, b + across * 1.2, '#ffffff', 0.35, 0.8))
+        # end caps: gold spheres
+        for e in (a, b):
+            s.append(f'<circle cx="{X(e):.2f}" cy="{Y(e):.2f}" r="2.3" fill="url(#goldBall)" stroke="#5a3a02" stroke-width="0.35"/>')
+    # small crown at the top
+    c = T2 + u * 2.0 + np.array([0, -3.2])
+    ang = 0
+    s.append(f'<g transform="translate({X(c):.2f},{Y(c):.2f}) rotate({ang:.1f})">'
+             '<path d="M-4,1.8 L-4.6,-2.6 L-2,-0.4 L0,-3.4 L2,-0.4 L4.6,-2.6 L4,1.8Z" fill="url(#goldH)" stroke="#5a3a02" stroke-width="0.35"/>'
+             '<rect x="-4" y="1.2" width="8" height="1.3" fill="url(#goldH)" stroke="#5a3a02" stroke-width="0.3"/>'
+             '<circle cx="0" cy="-3.4" r="0.6" fill="#b0122a"/><circle cx="-4.6" cy="-2.6" r="0.5" fill="#1f5fd1"/>'
+             '<circle cx="4.6" cy="-2.6" r="0.5" fill="#1f5fd1"/><circle cx="0" cy="0.6" r="0.6" fill="#1aa35a"/></g>')
+    return ''.join(s)
+
+# ------------------------------------------------------------------ action squares
+ACTION_STYLE = {
+    'turbo': ('#ff8a1f', '#c2410c', 'TURBO'),
+    'block': ('#e5484d', '#8f1d22', 'BLOCK'),
+    'hitch': ('#21b6a8', '#0d6b63', 'HITCHHIKE'),
+    'swap':  ('#8b5cf6', '#4c2a9e', 'SWAP'),
+}
+
+def action_icon(kind, x0, y0, cell):
+    c1, c2, label = ACTION_STYLE[kind]
+    cx, cy, R = x0 + cell * 0.56, y0 + cell * 0.6, 9.2
+    s = [f'<g transform="translate({cx:.2f},{cy:.2f})">']
+    s.append(f'<radialGradient id="ag_{kind}" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="{light(c1, 0.35)}"/>'
+             f'<stop offset="0.6" stop-color="{c1}"/><stop offset="1" stop-color="{c2}"/></radialGradient>')
+    s.append(f'<circle cx="1.0" cy="1.4" r="{R}" fill="#000" opacity="0.35" filter="url(#sh)"/>')
+    s.append(f'<circle r="{R}" fill="url(#goldH)"/>')
+    s.append(f'<circle r="{R-1.1}" fill="url(#ag_{kind})" stroke="#5a3a02" stroke-width="0.3"/>')
+    s.append(f'<path d="M{-R*0.62:.2f},{-R*0.45:.2f} A{R*0.8:.2f},{R*0.8:.2f} 0 0 1 {R*0.55:.2f},{-R*0.55:.2f}" fill="none" stroke="#fff" stroke-width="1" opacity="0.35" stroke-linecap="round"/>')
+    W = '#ffffff'
+    if kind == 'turbo':      # lightning bolt
+        s.append('<path d="M1.2,-6.6 L-3.8,0.4 L-0.4,0.4 L-1.6,5.2 L3.8,-1.8 L0.4,-1.8 Z" fill="#fff6c2" stroke="#7a2e05" stroke-width="0.45" stroke-linejoin="round" transform="translate(0,-0.9)"/>')
+    elif kind == 'block':    # striped barrier on two posts
+        s.append('<rect x="-5.2" y="-1.2" width="1.3" height="5.4" fill="#ddd" stroke="#333" stroke-width="0.3"/>'
+                 '<rect x="3.9" y="-1.2" width="1.3" height="5.4" fill="#ddd" stroke="#333" stroke-width="0.3"/>'
+                 '<rect x="-6.4" y="-4.6" width="12.8" height="3.6" rx="0.5" fill="#fff" stroke="#333" stroke-width="0.35"/>'
+                 '<clipPath id="bclip"><rect x="-6.4" y="-4.6" width="12.8" height="3.6" rx="0.5"/></clipPath>'
+                 '<g clip-path="url(#bclip)">' + ''.join(
+                     f'<path d="M{x},-4.6 l2,0 l-3.6,3.6 l-2,0Z" fill="#d1242b"/>' for x in (-5.6, -2.2, 1.2, 4.6, 8.0)) + '</g>')
+    elif kind == 'hitch':    # thumb up
+        s.append('<path d="M-3.6,-0.6 h2.0 v6 h-2.0z" fill="#fff" stroke="#0b4a45" stroke-width="0.4"/>'
+                 '<path d="M-1.2,-0.6 L0.6,-3.2 C1.0,-5.6 0.9,-6.8 2.0,-6.8 C3.4,-6.8 3.3,-4.6 2.6,-2.4 L5.2,-2.4 '
+                 'C6.4,-2.4 6.6,-1.0 5.8,-0.6 C6.6,-0.2 6.4,1.0 5.6,1.2 C6.3,1.6 6.0,2.8 5.2,2.9 C5.7,3.4 5.3,4.6 4.4,4.6 '
+                 'L-1.2,4.6 Z" fill="#fff" stroke="#0b4a45" stroke-width="0.45" stroke-linejoin="round" transform="translate(-0.6,-0.9)"/>')
+    elif kind == 'swap':     # two curved arrows
+        s.append('<path d="M-4.6,-1.4 A4.8,4.8 0 0 1 3.6,-3.6" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" transform="translate(0,-0.6)"/>'
+                 '<path d="M3.6,-3.6 l0.6,-2.6 l1.6,3.2 z" fill="#fff" transform="translate(0,-0.6) rotate(18 3.6 -3.6)"/>'
+                 '<path d="M4.6,1.4 A4.8,4.8 0 0 1 -3.6,3.6" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" transform="translate(0,-0.6)"/>'
+                 '<path d="M-3.6,3.6 l-0.6,2.6 l-1.6,-3.2 z" fill="#fff" transform="translate(0,-0.6) rotate(18 -3.6 3.6)"/>')
+    fs = 2.15 if len(label) > 6 else 2.6
+    s.append(f'<text x="0" y="{R-2.4:.2f}" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="{fs}" '
+             f'fill="#fff" stroke="{c2}" stroke-width="0.5" paint-order="stroke" letter-spacing="0.1">{label}</text>')
+    s.append('</g>')
+    return ''.join(s)
+
+DEFS2 = '''
+<filter id="glowblur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2"/></filter>
+<radialGradient id="goldBall" cx="35%" cy="35%" r="65%"><stop offset="0" stop-color="#fffbe0"/><stop offset="0.5" stop-color="#e8b934"/><stop offset="1" stop-color="#7a5205"/></radialGradient>
+'''

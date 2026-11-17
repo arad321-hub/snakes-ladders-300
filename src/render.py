@@ -2,7 +2,8 @@ import json, math, random, sys
 import numpy as np
 from gen import COLS, ROWS, N, CELL, MX, MY, PW, PH, rc, center
 
-lay = json.load(open('layout.json'))
+import os
+lay = json.load(open(os.environ.get('LAYOUT', 'layout.json')))
 elems = lay['elems']
 
 def X(p): return MX + p[0] * CELL
@@ -154,11 +155,18 @@ if STYLE == 'real':
     import elements as el
     BX = lambda p: MX + p[0]   # elements work in mm relative to the board origin
     BY = lambda p: MY + p[1]
-    A(f'<defs>{el.DEFS}</defs>')
+    A(f'<defs>{el.DEFS}{el.DEFS2}</defs>')
     for k, e in enumerate(ladders):
-        A(el.ladder(center(e['lo']), center(e['hi']), BX, BY, CELL, k))
+        if not e.get('golden'):
+            A(el.ladder(center(e['lo']), center(e['hi']), BX, BY, CELL, k))
     for i, e in order:
         A(el.snake(e, i, BX, BY, CELL, i))
+    for e in ladders:
+        if e.get('golden'):
+            A(el.golden_ladder(center(e['lo']), center(e['hi']), BX, BY, CELL))
+    for sq, kind in lay.get('actions', {}).items():
+        ra, ca = rc(int(sq))
+        A(el.action_icon(kind, MX + ca * CELL, MY + (ROWS - 1 - ra) * CELL, CELL))
     A(el.start_sign(sx0, sy0, CELL))
     A(el.trophy(tx0, ty0, CELL))
 else:

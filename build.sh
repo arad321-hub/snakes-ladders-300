@@ -8,7 +8,7 @@ cd "$(dirname "$0")/src"
 if [[ "${1:-}" == "search" ]]; then
   python3 gen.py "${2:-120}"
 fi
-python3 render.py "${THEME:-photo}" "${STYLE:-real}"
+LAYOUT="${LAYOUT:-layout2.json}" python3 render.py "${THEME:-photo}" "${STYLE:-real}"
 mv board.svg ../output/board.svg
 rsvg-convert -f pdf -o ../output/board.pdf ../output/board.svg
 rsvg-convert -w 2400 -o ../output/preview.png ../output/board.svg
