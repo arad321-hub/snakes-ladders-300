@@ -188,8 +188,11 @@ for n in range(1, N + 1):
     if THEME == 'photo':
         # number badge: readable on any background (snow, sand or space)
         bw = 2.4 + 4.35 * len(str(n))
-        A(f'<rect x="{x+0.9:.2f}" y="{y+0.9:.2f}" width="{bw:.2f}" height="8.2" rx="2.2" fill="#ffffff" fill-opacity="0.82" stroke="#13212c" stroke-opacity="0.35" stroke-width="0.3"/>')
-        A(f'<text x="{x+0.9+bw/2:.2f}" y="{y+7.35:.2f}" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="6.6" fill="#13212c">{n}</text>')
+        balpha = float(os.environ.get('BADGE_ALPHA', 0.12))
+        halo = balpha < 0.5
+        A(f'<rect x="{x+0.9:.2f}" y="{y+0.9:.2f}" width="{bw:.2f}" height="8.2" rx="2.2" fill="#ffffff" fill-opacity="{balpha}" stroke="#13212c" stroke-opacity="{0.35 if not halo else 0.12}" stroke-width="0.3"/>')
+        A(f'<text x="{x+0.9+bw/2:.2f}" y="{y+7.35:.2f}" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="6.6" fill="#13212c"'
+          + (' stroke="#ffffff" stroke-width="1.3" stroke-linejoin="round" paint-order="stroke"' if halo else '') + f'>{n}</text>')
     else:
         A(f'<text x="{x+1.6:.2f}" y="{y+7.4:.2f}" font-family="DejaVu Sans" font-weight="bold" font-size="7" '
           f'fill="#13212c" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round" paint-order="stroke">{n}</text>')

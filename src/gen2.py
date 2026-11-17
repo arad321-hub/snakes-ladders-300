@@ -43,9 +43,22 @@ def resample(P, step=0.07):
 def widths(P):
     seg = np.r_[0, np.cumsum(np.linalg.norm(np.diff(P, axis=0), axis=1))]
     t = seg / seg[-1]
-    w = 0.07 + 0.25 * (1 - t) ** 0.8
-    tip = np.clip((1 - t) / 0.22, 0, 1) ** 0.75      # cone over the last 22%
-    return np.maximum(w * tip, 0.004)
+    return taper(t)
+
+TIP_W = 0.045
+def taper(t):
+    """Body narrows gently (~40% head->tail), then a convex cone over the last 28% to a small blunt tip."""
+    body = 0.195 + 0.125 * (1 - t) ** 0.8
+    x = np.clip((1 - t) / 0.28, 0, 1)
+    return np.where(x < 1, TIP_W + (body - TIP_W) * np.sqrt(x), body)
+
+def add_round_cap(P, ws):
+    """Extend the centreline past the tail with a half-circle width profile (rounded tip)."""
+    P = np.asarray(P, float); u = P[-1] - P[-2]; u /= np.linalg.norm(u); r = ws[-1] / 2
+    ang = np.linspace(0, np.pi / 2, 8)[1:]
+    cap_p = [P[-1] + u * r * np.sin(a) for a in ang]
+    cap_w = [max(2 * r * np.cos(a), 0.002) for a in ang]
+    return np.vstack([P, cap_p]), np.r_[ws, cap_w]
 
 def snake_geom(h, t, style, rnd):
     H, T = center(h), center(t)
@@ -80,7 +93,7 @@ def snake_geom(h, t, style, rnd):
         P = np.array(body + sp)
     P = chaikin(P, 2)
     P = resample(P)
-    return P, widths(P)
+    return add_round_cap(P, widths(P))
 
 def inside(P):
     return np.all((P[:, 0] > 0.08) & (P[:, 0] < COLS - 0.08) & (P[:, 1] > 0.08) & (P[:, 1] < ROWS - 0.08))
