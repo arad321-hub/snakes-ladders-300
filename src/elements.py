@@ -364,11 +364,11 @@ DEFS = '''
 '''
 
 # ------------------------------------------------------------------ golden (championship) ladder
-def golden_ladder(B, T, X, Y, CELL, uid=0):
+def golden_ladder(B, T, X, Y, CELL, uid=0, to_finish=False):
     B = np.array(B) * CELL; T = np.array(T) * CELL
     d = T - B; Lm = np.linalg.norm(d); u = d / Lm; nr = np.array([-u[1], u[0]])
     half = 0.24 * CELL
-    B2, T2 = B - u * 5.5, T + u * 4.0
+    B2, T2 = B - u * 5.5, (T - u * 6.5 if to_finish else T + u * 4.0)
     across = nr * (0.5 * np.sign(nr @ LIGHT))
     def line(a, b, col, w, op=1, extra=''):
         return (f'<line x1="{X(a):.2f}" y1="{Y(a):.2f}" x2="{X(b):.2f}" y2="{Y(b):.2f}" stroke="{col}" '
@@ -403,6 +403,8 @@ def golden_ladder(B, T, X, Y, CELL, uid=0):
         # end caps: gold spheres
         for e in (a, b):
             s.append(f'<circle cx="{X(e):.2f}" cy="{Y(e):.2f}" r="2.3" fill="url(#goldBall)" stroke="#5a3a02" stroke-width="0.35"/>')
+    if to_finish:
+        return ''.join(s)
     # small crown at the top
     c = T2 + u * 2.0 + np.array([0, -3.2])
     ang = 0
@@ -418,6 +420,7 @@ ACTION_STYLE = {
     'turbo': ('#ff8a1f', '#c2410c', 'TURBO'),
     'block': ('#e5484d', '#8f1d22', 'BLOCK'),
     'hitch': ('#21b6a8', '#0d6b63', 'HITCHHIKE'),
+    'drain': ('#21b6a8', '#0d6b63', 'ENERGY DRAIN'),
     'swap':  ('#8b5cf6', '#4c2a9e', 'SWAP'),
 }
 
@@ -441,7 +444,7 @@ def action_icon(kind, x0, y0, cell):
                  '<clipPath id="bclip"><rect x="-6.4" y="-4.6" width="12.8" height="3.6" rx="0.5"/></clipPath>'
                  '<g clip-path="url(#bclip)">' + ''.join(
                      f'<path d="M{x},-4.6 l2,0 l-3.6,3.6 l-2,0Z" fill="#d1242b"/>' for x in (-5.6, -2.2, 1.2, 4.6, 8.0)) + '</g>')
-    elif kind == 'hitch':    # thumb up
+    elif kind in ('hitch', 'drain'):    # placeholder icon until the new artwork arrives
         s.append('<path d="M-3.6,-0.6 h2.0 v6 h-2.0z" fill="#fff" stroke="#0b4a45" stroke-width="0.4"/>'
                  '<path d="M-1.2,-0.6 L0.6,-3.2 C1.0,-5.6 0.9,-6.8 2.0,-6.8 C3.4,-6.8 3.3,-4.6 2.6,-2.4 L5.2,-2.4 '
                  'C6.4,-2.4 6.6,-1.0 5.8,-0.6 C6.6,-0.2 6.4,1.0 5.6,1.2 C6.3,1.6 6.0,2.8 5.2,2.9 C5.7,3.4 5.3,4.6 4.4,4.6 '

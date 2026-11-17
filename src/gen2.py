@@ -12,15 +12,17 @@ import math, random, sys, json
 import numpy as np
 from gen import COLS, ROWS, N, rc, center, cell_of, path_cells, ladder_cells, segs_cross
 
-MAX_PER_CELL = 2
 import os
-GOLDEN = (260, int(os.environ.get('GOLDEN_TOP', 300)))
+MAX_PER_CELL = int(os.environ.get('MAX_PER_CELL', 2))
+import os
+GOLDEN = (int(os.environ.get('GOLDEN_FROM', 258)), int(os.environ.get('GOLDEN_TOP', 300)))
+BOUNCE_SNAKE_HEAD = 296    # least game-delaying of 296-298 (simulated)
 BOUNCE_ZONE = range(288, 300)
 # reference lengths read from the original 100-square board, x3
 REF_SNAKES = [63, 43, 38, 21, 20, 20, 20, 10, 4, 3]
 REF_LADDERS = [51, 21, 20, 20, 19, 18, 16, 10, 2]
 SCALE = 3
-ACTION_PLAN = {'swap': [(62, 78), (150, 170), (242, 258)],
+ACTION_PLAN = {'swap': [(64, 76), (150, 170), (244, 256)],
                'block': 3, 'turbo': 4, 'hitch': 4}
 
 # ------------------------------------------------------------------ geometry
@@ -41,7 +43,9 @@ def resample(P, step=0.07):
 def widths(P):
     seg = np.r_[0, np.cumsum(np.linalg.norm(np.diff(P, axis=0), axis=1))]
     t = seg / seg[-1]
-    return 0.07 + 0.25 * (1 - t) ** 0.8
+    w = 0.07 + 0.25 * (1 - t) ** 0.8
+    tip = np.clip((1 - t) / 0.22, 0, 1) ** 0.75      # cone over the last 22%
+    return np.maximum(w * tip, 0.004)
 
 def snake_geom(h, t, style, rnd):
     H, T = center(h), center(t)
@@ -98,7 +102,7 @@ def build(seed, n_snakes, n_ladders, curvy_frac=0.36):
             cells = path_cells(pts, ws)
             line = pts[::5].tolist() + [pts[-1].tolist()]
         else:
-            if abs(ea[1] - eb[1]) > 6: return False
+            if abs(ea[1] - eb[1]) > 8: return False
             cells = ladder_cells(b, a)
             line = [center(b).tolist(), center(a).tolist()]
         nx = 0
@@ -127,22 +131,36 @@ def build(seed, n_snakes, n_ladders, curvy_frac=0.36):
     # 1) golden ladder
     assert try_add('L', GOLDEN[1], GOLDEN[0], golden=True)
     # 2) exactly one snake in the bounce zone
+    h = BOUNCE_SNAKE_HEAD
     for _ in range(400):
-        h = rnd.choice(list(BOUNCE_ZONE)); L = rnd.randint(25, 45)
+        L = rnd.randint(25, 45); (r1, c1), (r2, c2) = rc(h), rc(h - L)
+        dr, dc = abs(r1 - r2), abs(c1 - c2)
+        if dr == 0 or dc < max(2, 0.5 * dr) or dc > 8: continue
         if try_add('S', h, h - L, style=rnd.choice(['wave', 'arc', 'curl'])): break
     want = {'S': n_snakes, 'L': n_ladders}
     cnt = {'S': 1, 'L': 1}
     n_curvy_target = round(n_snakes * curvy_frac)
     n_curvy = sum(1 for e in elems if e['kind'] == 'S' and e['style'] != 'wave')
     attempts = 0
-    while (cnt['S'] < want['S'] or cnt['L'] < want['L']) and attempts < 14000:
+    while (cnt['S'] < want['S'] or cnt['L'] < want['L']) and attempts < 20000:
         attempts += 1
         kind = 'S' if cnt['S'] / want['S'] <= cnt['L'] / want['L'] else 'L'
         if cnt[kind] >= want[kind]: kind = 'L' if kind == 'S' else 'S'
         ref = REF_SNAKES if kind == 'S' else REF_LADDERS
         sc = SCALE if kind == 'S' else float(os.environ.get('LADDER_SCALE', 3))
         L = min(int(os.environ.get('MAXLEN', 130)), max(12, int(round(rnd.choice(ref) * sc * rnd.uniform(0.8, 1.2)))))
-        lo = rnd.randint(2, N - 1 - L); hi = lo + L
+        lo = rnd.randint(2, N - 1 - L)
+        cands = []
+        for L2 in range(max(12, int(L * 0.85)), int(L * 1.15) + 1):
+            h2 = lo + L2
+            if h2 >= N: break
+            (r1, c1), (r2, c2) = rc(lo), rc(h2)
+            dr, dc = abs(r2 - r1), abs(c2 - c1)
+            if dr == 0: continue
+            if dc < max(2, 0.5 * dr) or dc > 8: continue
+            cands.append(h2)
+        if not cands: continue
+        hi = rnd.choice(cands)
         if hi >= N or lo <= 1: continue
         if hi in BOUNCE_ZONE or lo in BOUNCE_ZONE or hi >= 288: continue
         style = None
@@ -223,7 +241,8 @@ if __name__ == '__main__':
     n_s = int(sys.argv[2]) if len(sys.argv) > 2 else 24
     n_l = int(sys.argv[3]) if len(sys.argv) > 3 else 21
     best = None
-    for seed in range(seeds):
+    start = int(os.environ.get('SEED_START', 0))
+    for seed in range(start, start + seeds):
         elems, occ = build(seed, n_s, n_l)
         acts = place_actions(elems, occ, random.Random(seed))
         if acts is None: continue
@@ -245,4 +264,4 @@ if __name__ == '__main__':
     ev = evaluate(elems, acts, games=20000, seed=99)
     print('BEST seed', seed, ev)
     out = [dict(kind=e['kind'], hi=e['hi'], lo=e['lo'], geom=e['geom'], style=e['style'], golden=e['golden']) for e in elems]
-    json.dump(dict(seed=seed, version=2, elems=out, actions={str(k): v for k, v in acts.items()}), open('layout2.json', 'w'))
+    json.dump(dict(seed=seed, version=2, elems=out, actions={str(k): v for k, v in acts.items()}), open(os.environ.get('OUT', 'layout2.json'), 'w'))

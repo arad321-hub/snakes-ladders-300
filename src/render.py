@@ -163,7 +163,7 @@ if STYLE == 'real':
         A(el.snake(e, i, BX, BY, CELL, i))
     for e in ladders:
         if e.get('golden'):
-            A(el.golden_ladder(center(e['lo']), center(e['hi']), BX, BY, CELL))
+            A(el.golden_ladder(center(e['lo']), center(e['hi']), BX, BY, CELL, to_finish=(e['hi'] == N)))
     for sq, kind in lay.get('actions', {}).items():
         ra, ca = rc(int(sq))
         A(el.action_icon(kind, MX + ca * CELL, MY + (ROWS - 1 - ra) * CELL, CELL))
