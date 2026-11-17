@@ -1,4 +1,4 @@
-import json, math, random
+import json, math, random, sys
 import numpy as np
 from gen import COLS, ROWS, N, CELL, MX, MY, PW, PH, rc, center
 
@@ -30,8 +30,26 @@ A('<defs><filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feGaussia
 A(f'<rect width="{PW}" height="{PH}" fill="#20394a"/>')
 A(f'<rect x="{MX-6}" y="{MY-6}" width="{COLS*CELL+12}" height="{ROWS*CELL+12}" rx="6" fill="#f4e3c3" stroke="#0f2230" stroke-width="1.2"/>')
 
+THEME = sys.argv[1] if len(sys.argv) > 1 else 'worlds'
 # cells
-for n in range(1, N + 1):
+if THEME == 'worlds':
+    from worlds import background
+    bdefs, bsvg = background(MX, MY, CELL, COLS, ROWS)
+    A(f'<defs>{bdefs}</defs>'); A(bsvg)
+    # checkerboard as a light translucent veil over the art + thin grid lines
+    for n in range(1, N + 1):
+        r, c = rc(n)
+        x = MX + c * CELL; y = MY + (ROWS - 1 - r) * CELL
+        space = r // 3 == 4
+        op = (0.10 if space else 0.30) if (r + c) % 2 == 0 else (0.0 if space else 0.08)
+        if op:
+            A(f'<rect x="{x:.2f}" y="{y:.2f}" width="{CELL}" height="{CELL}" fill="#ffffff" fill-opacity="{op}"/>')
+    for i in range(1, COLS):
+        A(f'<line x1="{MX+i*CELL}" y1="{MY}" x2="{MX+i*CELL}" y2="{MY+ROWS*CELL}" stroke="#ffffff" stroke-opacity="0.45" stroke-width="0.35"/>')
+    for j in range(1, ROWS):
+        A(f'<line x1="{MX}" y1="{MY+j*CELL}" x2="{MX+COLS*CELL}" y2="{MY+j*CELL}" stroke="#ffffff" stroke-opacity="0.45" stroke-width="0.35"/>')
+else:
+  for n in range(1, N + 1):
     r, c = rc(n)
     x = MX + c * CELL; y = MY + (ROWS - 1 - r) * CELL
     light, dark = BANDS[min(r // 3, 4)]
