@@ -498,24 +498,23 @@ def _img(name, x, y, w, h):
 
 LABELS = {'turbo': 'TURBO', 'block': 'BLOCK', 'drain': 'ENERGY DRAIN', 'hitch': 'ENERGY DRAIN', 'swap': 'SWAP'}
 
-def action_icon_img(kind, x0, y0, cell):
+def action_icon_img(kind, x0, y0, cell, D=21.0, label=False):
+    """Action medallion, centred in its square (no text label by default)."""
     art = icon_uri('drain' if kind == 'hitch' else kind)
     if art is None:
         return action_icon(kind, x0, y0, cell)
-    uri, asp = art
+    name, asp = art
     c1, c2, _ = ACTION_STYLE.get(kind, ACTION_STYLE['drain'])
-    D = 21.0
-    cx, cy = x0 + cell * 0.57, y0 + cell * 0.6
+    cx, cy = x0 + cell / 2, y0 + cell / 2
     s = [f'<circle cx="{cx+1.0:.2f}" cy="{cy+1.5:.2f}" r="{D/2-0.3:.2f}" fill="#000" opacity="0.38" filter="url(#sh)"/>']
-    s.append(_img(uri, cx - D / 2, cy - D / 2, D, D / asp))
-    label = LABELS[kind]
-    fs = 2.0 if len(label) > 6 else 2.35
-    bw = 1.6 + len(label) * fs * 0.66
-    by = cy + D / 2 - 2.6
-    s.append(f'<rect x="{cx-bw/2:.2f}" y="{by:.2f}" width="{bw:.2f}" height="{fs+1.4:.2f}" rx="{(fs+1.4)/2:.2f}" '
-             f'fill="{c2}" stroke="#e8b934" stroke-width="0.45"/>')
-    s.append(f'<text x="{cx:.2f}" y="{by+fs+0.35:.2f}" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" '
-             f'font-size="{fs}" fill="#fff" letter-spacing="0.08">{label}</text>')
+    s.append(_img(name, cx - D / 2, cy - D / 2, D, D / asp))
+    if label:
+        text = LABELS[kind]; fs = 2.0 if len(text) > 6 else 2.35
+        bw = 1.6 + len(text) * fs * 0.66; by = cy + D / 2 - 2.6
+        s.append(f'<rect x="{cx-bw/2:.2f}" y="{by:.2f}" width="{bw:.2f}" height="{fs+1.4:.2f}" rx="{(fs+1.4)/2:.2f}" '
+                 f'fill="{c2}" stroke="#e8b934" stroke-width="0.45"/>')
+        s.append(f'<text x="{cx:.2f}" y="{by+fs+0.35:.2f}" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" '
+                 f'font-size="{fs}" fill="#fff" letter-spacing="0.08">{text}</text>')
     return ''.join(s)
 
 def start_sign_img(x0, y0, cell, h=19.0, fade_from=0.70):
