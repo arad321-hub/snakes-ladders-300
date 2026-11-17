@@ -518,13 +518,13 @@ def action_icon_img(kind, x0, y0, cell, D=21.0, label=False):
                  f'font-size="{fs}" fill="#fff" letter-spacing="0.08">{text}</text>')
     return ''.join(s)
 
-def start_sign_img(x0, y0, cell, h=19.0, fade_from=0.70):
+def start_sign_img(x0, y0, cell, h=22.8, fade_from=0.70, left=4.28):
     """START signpost near the left edge of square 1; its soil base dissolves into the meadow."""
     art = icon_uri('start')
     if art is None: return start_sign(x0, y0, cell)
     name, asp = art
     w = h * asp
-    x = x0 + 0.9; y = y0 + cell - h - 0.3
+    x = x0 + left; y = y0 + cell - h - 0.3          # left edge under the centre of the number 1
     mid = 'startfade'
     return (f'<linearGradient id="{mid}g" gradientUnits="userSpaceOnUse" x1="0" y1="{y:.2f}" x2="0" y2="{y+h:.2f}">'
             f'<stop offset="0" stop-color="#fff"/><stop offset="{fade_from}" stop-color="#fff"/>'
